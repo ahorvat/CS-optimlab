@@ -1,0 +1,5 @@
+To run the driver use
+python driver.pl
+
+The Makefile might not work out of the box.
+Ask  your TA to help or email Ana: a.l.varbanescu@uva.nl
