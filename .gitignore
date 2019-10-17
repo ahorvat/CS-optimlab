@@ -3,3 +3,8 @@
 *.a
 *.~
 *~
+k_nearest
+k_nearest_seq
+k_nearest_simd
+k_nearest_book
+k_nearest_thread
