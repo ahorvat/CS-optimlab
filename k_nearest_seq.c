@@ -41,27 +41,6 @@ data_t squared_eucledean_distance(data_t *x,data_t *y, int length){
 	return distance;
 }
 
-data_t opt_squared_eucledean_distance(data_t *x,data_t *y, int length){
-	data_t distance = 0;
-
-    data_t curr_x;
-    data_t curr_y;
-    data_t diff;
-
-	int i = 0;
-	for (i = 0; i < length;i++) {
-
-        // distance+= mult(abs_diff(x[i],y[i]),abs_diff(x[i],y[i]));
-        curr_x = x[i];
-        curr_y = y[i];
-
-        diff = fabs(curr_x - curr_y);
-        distance += diff * diff;
-
-	}
-	return distance;
-}
-
 data_t norm(data_t *x, int length){
     data_t n = 0;
     int i=0;
@@ -122,7 +101,7 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
     data_t curr_x, curr_y0, curr_y1, curr_y2, curr_y3;
     data_t diff0, diff1, diff2, diff3;
 
-    // remove function, exsessive loop and repeated indexing
+    // remove function, excessive loop and repeated indexing
     min_distance = 100000000000.0;
 	// min_distance = squared_eucledean_distance(features[lookFor],features[0],FEATURE_LENGTH);
     // result[0] = min_distance;
@@ -133,7 +112,7 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
 
     //  calculate limit of looping
     int limit = ROWS - (ROWS % ROW_step_size);
-	for (i = ROW_step_size-1; i < limit; i+= step_size) {
+	for (i = ROW_step_size-1; i < limit; i+= ROW_step_size) {
 
         // printf("current i: %d/%d (%d, %d, %d, %d)\n", i, ROWS, (i-3), (i-2), (i-1), i);
 		// current_distance = opt_squared_eucledean_distance(lookfor, features[i], FEATURE_LENGTH);
@@ -177,22 +156,22 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
 
         // printf("%f\n", current_distance);
 
-		if(current_distance0 < min_distance){
+		if (current_distance0 < min_distance) {
 			min_distance = current_distance0;
 			closest_point = i-3;
 		}
 
-        if(current_distance1 < min_distance){
+        if (current_distance1 < min_distance) {
 			min_distance = current_distance1;
 			closest_point = i-2;
 		}
 
-        if(current_distance2 < min_distance){
+        if (current_distance2 < min_distance) {
 			min_distance = current_distance2;
 			closest_point = i-1;
 		}
 
-        if(current_distance3 < min_distance){
+        if (current_distance3 < min_distance) {
 			min_distance = current_distance3;
 			closest_point = i;
 		}
@@ -225,7 +204,7 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
 
         // printf("%f\n", current_distance);
 
-		if(current_distance0 < min_distance){
+		if (current_distance0 < min_distance) {
 			min_distance = current_distance0;
 			closest_point = i;
 		}
@@ -267,21 +246,138 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     data_t *result =(data_t*)malloc(sizeof(data_t)*(ROWS-1));
     struct timeval stv, etv;
     int i,closest_point=0;
-    data_t min_distance,current_distance;
 
     timer_start(&stv);
 
     //MODIFY FROM HERE
-	min_distance = cosine_similarity(features[lookFor],features[0],FEATURE_LENGTH);
-    	result[0] = min_distance;
-	for(i=1;i<ROWS-1;i++) {
-		current_distance = cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH);
-        	result[i]=current_distance;
-		if(current_distance>min_distance){
-			min_distance=current_distance;
-			closest_point=i;
+    data_t min_distance;
+    data_t *lookfor, *y_vec0, *y_vec1, *y_vec2, *y_vec3;
+    data_t curr_x, curr_y0, curr_y1, curr_y2, curr_y3;
+    data_t norm_x, norm_y0, norm_y1, norm_y2, norm_y3;
+    data_t sim0, sim1, sim2, sim3;
+
+    // remove function, excessive loop and repeated indexing
+    min_distance = 0.000000000000000001;
+
+	// min_distance = squared_eucledean_distance(features[lookFor],features[0],FEATURE_LENGTH);
+    // result[0] = min_distance;
+
+    lookfor = features[lookFor];
+
+    int ROW_step_size = 4;
+
+    // calculate norm_x only once.
+    norm_x = 0;
+
+    for (int i = 0; i < FEATURE_LENGTH; i++) {
+        curr_x = lookfor[i];
+        norm_x += (curr_x * curr_x);
+    }
+
+    norm_x = sqrt(norm_x);
+
+    // calculate limit of looping
+    int limit = ROWS - (ROWS % ROW_step_size);
+	for (i = ROW_step_size-1; i < limit; i+= ROW_step_size) {
+        // current_distance = cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH);
+
+        y_vec0 = features[i-3];
+        y_vec1 = features[i-2];
+        y_vec2 = features[i-1];
+        y_vec3 = features[i];
+
+        sim0 = 0;
+        sim1 = 0;
+        sim2 = 0;
+        sim3 = 0;
+        norm_y0 = 0;
+        norm_y1 = 0;
+        norm_y2 = 0;
+        norm_y3 = 0;
+
+    	for (int j = 0; j < FEATURE_LENGTH; j++) {
+
+            curr_x = lookfor[j];
+
+            curr_y0 = y_vec0[j];
+            curr_y1 = y_vec1[j];
+            curr_y2 = y_vec2[j];
+            curr_y3 = y_vec3[j];
+
+            sim0 += curr_x * curr_y0;
+            sim1 += curr_x * curr_y1;
+            sim2 += curr_x * curr_y2;
+            sim3 += curr_x * curr_y3;
+
+            norm_y0 += curr_y0 * curr_y0;
+            norm_y1 += curr_y1 * curr_y1;
+            norm_y2 += curr_y2 * curr_y2;
+            norm_y3 += curr_y3 * curr_y3;
+        }
+
+        // sim = sim / mult(norm( x, FEATURE_LENGTH),norm(y, FEATURE_LENGTH));
+        sim0 = sim0 / (norm_x * sqrt(norm_y0));
+        sim1 = sim1 / (norm_x * sqrt(norm_y1));
+        sim2 = sim2 / (norm_x * sqrt(norm_y2));
+        sim3 = sim3 / (norm_x * sqrt(norm_y3));
+
+        result[i-3] = sim0;
+        result[i-2] = sim1;
+        result[i-1] = sim2;
+        result[i] = sim3;
+
+        if (sim0 > min_distance) {
+            min_distance = sim0;
+            closest_point = i-3;
+        }
+
+        if (sim1 > min_distance) {
+            min_distance = sim1;
+            closest_point = i-2;
+        }
+
+        if (sim2 > min_distance) {
+            min_distance = sim2;
+            closest_point = i-1;
+        }
+
+        if (sim3 > min_distance) {
+            min_distance = sim3;
+            closest_point = i;
+        }
+    }
+
+    // int limit = 0;
+    // remainder loop
+	for (i = limit; i < ROWS - 1; i++) {
+        // current_distance = cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH);
+
+        y_vec0 = features[i];
+
+        sim0 = 0;
+        norm_y0 = 0;
+
+    	for (int j = 0; j < FEATURE_LENGTH; j++) {
+
+            curr_x = lookfor[j];
+
+            curr_y0 = y_vec0[j];
+
+            sim0 += curr_x * curr_y0;
+
+            norm_y0 += curr_y0 * curr_y0;
+    	}
+
+        sim0 = sim0 / (norm_x * sqrt(norm_y0));
+
+        result[i] = sim0;
+
+		if (sim0 > min_distance) {
+			min_distance = sim0;
+			closest_point = i;
 		}
 	}
+
     //TO HERE
     timer_opt_CS = timer_end(stv);
     printf("Calculation using optimized CS took: %10.6f \n", timer_opt_CS);
