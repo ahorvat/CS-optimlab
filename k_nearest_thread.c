@@ -66,8 +66,10 @@ data_t opt_cosine_similarity(data_t *x, data_t *y, int length, data_t norm_x){
     int i=0;
     data_t norm_y = 0;
     for(i=0;i<length;i++){
-        sim += mult(x[i],y[i]);
-        norm_y += mult(y[i], y[i]);
+
+        data_t curr_y = y[i];
+        sim += mult(x[i],curr_y);
+        norm_y += mult(y[i], curr_y);
     }
     sim = sim / mult(norm_x, sqrt(norm_y));
     return sim;
