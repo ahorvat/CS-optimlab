@@ -61,6 +61,18 @@ data_t cosine_similarity(data_t *x, data_t *y, int length){
     return sim;
 }
 
+data_t opt_cosine_similarity(data_t *x, data_t *y, int length, data_t norm_x){
+    data_t sim=0;
+    int i=0;
+    data_t norm_y = 0;
+    for(i=0;i<length;i++){
+        sim += mult(x[i],y[i]);
+        norm_y += mult(y[i], y[i]);
+    }
+    sim = sim / mult(norm_x, sqrt(norm_y));
+    return sim;
+}
+
 
 data_t *ref_classify_MD(unsigned int lookFor, unsigned int *found) {
     data_t *result =(data_t*)malloc(sizeof(data_t)*(ROWS-1));
@@ -317,6 +329,9 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     timer_start(&stv);
 
     //MODIFY FROM HERE
+
+    data_t norm_x = norm(features[lookFor],FEATURE_LENGTH);
+
     for (i=0; i<NUM_THREADS; i++)
     {
        	threadParameters[i].id=i;
@@ -324,7 +339,8 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
         threadParameters[i].min_distance=min_distance;
         threadParameters[i].lookFor=lookFor;
         threadParameters[i].located=0;
-        threadParameters[i].tempResult=result; 
+        threadParameters[i].tempResult=result;
+        threadParameters[i].norm_x=norm_x;
     }	
 
     for (i=0; i<NUM_THREADS; i++) {
@@ -332,7 +348,7 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     }
 
     for(i=NUM_THREADS*chunk;i<ROWS-1;i++){
-               current_distance = cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH);
+               current_distance = opt_cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH, norm_x);
                 result[i]=current_distance;
                 if(current_distance<min_distance){
                         min_distance=current_distance;

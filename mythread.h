@@ -1,6 +1,6 @@
 #include <pthread.h>
 
-#define NUM_THREADS  4
+#define NUM_THREADS  6
 
 typedef struct {
         int id;
@@ -9,6 +9,7 @@ typedef struct {
 	data_t min_distance; 
 	unsigned int located;
 	data_t *tempResult;
+	data_t norm_x;
 } parm;
 
 
