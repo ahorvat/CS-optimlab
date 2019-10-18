@@ -370,7 +370,7 @@ int check_correctness(classifying_funct a, classifying_funct b, unsigned int loo
     data_t epsilon = 0.0001;
 
     for(i = 0; i < ROWS - 1; i++){
-        printf("reference value = %f, optimized output = %f\n", a_res[i], b_res[i]);
+        // printf("reference value = %f, optimized output = %f\n", a_res[i], b_res[i]);
         if (fabs(a_res[i] - b_res[i]) > epsilon) {
 
             printf("reference value = %f, optimized output = %f\n", a_res[i], b_res[i]);
