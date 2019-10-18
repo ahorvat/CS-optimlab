@@ -141,20 +141,16 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
             diff2 = fabs(curr_x - curr_y2);
             diff3 = fabs(curr_x - curr_y3);
 
-            current_distance0 += (diff0 * diff0);
-            current_distance1 += (diff1 * diff1);
-            current_distance2 += (diff2 * diff2);
-            current_distance3 += (diff3 * diff3);
+            current_distance0 += pow(diff0, 2);
+            current_distance1 += pow(diff1, 2);
+            current_distance2 += pow(diff2, 2);
+            current_distance3 += pow(diff3, 2);
     	}
-
-        // printf("%f\n", current_distance0);
 
         result[i-3] = current_distance0;
         result[i-2] = current_distance1;
         result[i-1] = current_distance2;
         result[i] = current_distance3;
-
-        // printf("%f\n", current_distance);
 
 		if (current_distance0 < min_distance) {
 			min_distance = current_distance0;
@@ -177,8 +173,6 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
 		}
 	}
 
-    // printf("remainder!\n");
-
     // remainder loop
 	for (i = limit; i < ROWS - 1; i++) {
 
@@ -196,7 +190,7 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
             curr_y0 = y_vec0[j];
 
             diff0 = fabs(curr_x - curr_y0);
-            current_distance0 += (diff0 * diff0);
+            current_distance0 += pow(diff0, 2);
 
     	}
 
@@ -212,7 +206,6 @@ data_t *opt_classify_ED(unsigned int lookFor, unsigned int *found) {
     //TO HERE
     timer_opt_ED = timer_end(stv);
     printf("Calculation using optimized ED took: %10.6f \n", timer_opt_ED);
-    printf("min_dist: %d", closest_point);
     *found = closest_point;
     return result;
 }
@@ -256,17 +249,12 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     data_t norm_x, norm_y0, norm_y1, norm_y2, norm_y3;
     data_t sim0, sim1, sim2, sim3;
 
-    // remove function, excessive loop and repeated indexing
+    // small value to start comparing with
     min_distance = 0.000000000000000001;
 
-	// min_distance = squared_eucledean_distance(features[lookFor],features[0],FEATURE_LENGTH);
-    // result[0] = min_distance;
+    lookfor = features[lookFor]; // avoid repeated indexing
 
-    lookfor = features[lookFor];
-
-    int ROW_step_size = 4;
-
-    // calculate norm_x only once.
+    // calculate norm_x only once (and not repeatedly).
     norm_x = 0;
 
     for (int i = 0; i < FEATURE_LENGTH; i++) {
@@ -275,6 +263,8 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     }
 
     norm_x = sqrt(norm_x);
+
+    int ROW_step_size = 4;
 
     // calculate limit of looping
     int limit = ROWS - (ROWS % ROW_step_size);
@@ -309,10 +299,10 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
             sim2 += curr_x * curr_y2;
             sim3 += curr_x * curr_y3;
 
-            norm_y0 += curr_y0 * curr_y0;
-            norm_y1 += curr_y1 * curr_y1;
-            norm_y2 += curr_y2 * curr_y2;
-            norm_y3 += curr_y3 * curr_y3;
+            norm_y0 += pow(curr_y0, 2);
+            norm_y1 += pow(curr_y1, 2);
+            norm_y2 += pow(curr_y2, 2);
+            norm_y3 += pow(curr_y3, 2);
         }
 
         // sim = sim / mult(norm( x, FEATURE_LENGTH),norm(y, FEATURE_LENGTH));
@@ -365,7 +355,7 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
 
             sim0 += curr_x * curr_y0;
 
-            norm_y0 += curr_y0 * curr_y0;
+            norm_y0 += pow(curr_y0, 2);
     	}
 
         sim0 = sim0 / (norm_x * sqrt(norm_y0));
@@ -395,19 +385,17 @@ int check_correctness(classifying_funct a, classifying_funct b, unsigned int loo
 
     for(i = 0; i < ROWS - 1; i++){
 
-
         if (fabs(a_res[i] - b_res[i]) > epsilon) {
-            printf("ref= %f, opt= %f\n", a_res[i], b_res[i]);
+            printf("vector number = %d, reference value = %f, optimized output = %f\n", i, a_res[i], b_res[i]);
             // returning 0 means = wrong
             return 0;
         }
     }
 
     if (fabs(a_found - b_found) > epsilon) {
-        printf("Found Result is wrong --> ref: %f, opt= %f\n", a_found, b_found);
+        printf("Found result is wrong --> ref: %f, opt= %f\n", a_found, b_found);
         return 0;
     }
-
 
     *found=a_found;
 
@@ -436,7 +424,6 @@ data_t *ref_classify_MD(unsigned int lookFor, unsigned int *found) {
     *found=closest_point;
     return result;
 }
-
 
 //NO NEED to modify this function!
 data_t *opt_classify_MD(unsigned int lookFor, unsigned int *found) {
