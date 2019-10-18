@@ -3,7 +3,7 @@ CFLAGS          := -O1 -w -fno-inline-functions -fno-early-inlining -fno-inline-
 #uncomment the following lines if running on acheron 
 #CFLAGS		:= -O1 -w -fno-inline-functions -fno-early-inlining -fno-inline-small-functions -fno-tree-loop-optimize
 #CC		:= gcc 
-LDFLAGS += -lm -lpthread
+LDFLAGS += -lm -lpthread -fopenmp
 
 all: clean k_nearest k_nearest_seq k_nearest_simd k_nearest_simd_book k_nearest_thread
  

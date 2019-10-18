@@ -6,6 +6,7 @@
 #include "simpletimer.h"
 #include "parse.h"
 #include "vec.h"
+// #include "omp.h"
 
 #include "mythread.h" 
 
@@ -235,6 +236,44 @@ data_t *ref_classify_CS(unsigned int lookFor, unsigned int* found) {
     return result;
 }
 
+void *thread_cosine_similarity(void *arg)
+{
+   int i; 
+   parm *p=(parm *)arg;
+   unsigned int start_index, end_index;
+   data_t current_distance;
+
+   start_index=p->id * p->chunk;
+   end_index=start_index+p->chunk;
+
+   for(i=start_index;i<end_index;i++){
+      current_distance = cosine_similarity(features[p->lookFor],features[i],FEATURE_LENGTH);
+      p->tempResult[i]=current_distance;
+      if(current_distance<p->min_distance){
+         p->min_distance=current_distance;
+         p->located=i;   
+      }
+   }
+   return (NULL);
+}
+
+data_t mymax(data_t r,data_t n) {
+// r is the already reduced value
+// n is the new value
+int m;
+if (n>r) {
+m = n;
+} else {
+m = r;
+}
+return m;
+}
+
+#pragma omp declare reduction \
+(rwz:data_t:omp_out=mymax(omp_out,omp_in)) \
+initializer(omp_priv=0)
+
+// # pragma TODO:
 //Modify this function 
 data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     data_t *result =(data_t*)malloc(sizeof(data_t)*(ROWS-1));
@@ -245,9 +284,32 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
     timer_start(&stv);
 
     //MODIFY FROM HERE
-	min_distance = cosine_similarity(features[lookFor],features[0],FEATURE_LENGTH);
-    	result[0] = min_distance;
-	for(i=1;i<ROWS-1;i++) {
+    // data_t dist_arr[6];
+
+	// min_distance = cosine_similarity(features[lookFor],features[0],FEATURE_LENGTH);
+    // 	result[0] = min_distance;
+
+    // #pragma omp parallel for num_threads(6) reduction()
+    // // int thread_id = omp_get_thread_num();
+    // // #pragma omp for  //shared(min_distance)
+	// for(i=1;i<ROWS-1;i++) {
+	// 	current_distance = cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH);
+    //     	result[i]=current_distance;
+    //     // #pragma omp critical
+	// 	if(current_distance>dist_arr[ID]){
+    //         // #pragma omp atomic write
+	// 		// min_distance=current_distance;
+    //         dist_arr[ID] = current_distance;
+    //         // printf('min dist: %d', current_distance);
+	// 		closest_point=i;
+	// 	}
+	// }
+
+    min_distance = cosine_similarity(features[lookFor],features[0],FEATURE_LENGTH);
+    result[0] = min_distance;
+
+    #pragma omp parallel for num_threads(6) reduction(rwz:min_distance)
+    for(i=1;i<ROWS-1;i++) {
 		current_distance = cosine_similarity(features[lookFor],features[i],FEATURE_LENGTH);
         	result[i]=current_distance;
 		if(current_distance>min_distance){
@@ -255,8 +317,22 @@ data_t *opt_classify_CS(unsigned int lookFor, unsigned int *found) {
 			closest_point=i;
 		}
 	}
+    
+
+    // for (size_t i = 0; i < 6; i++)
+    // {
+    //     if (current_distance>dist_arr[i])
+    //     {
+    //         min_distance = dist_arr[i];
+    //     }
+        
+    // }
+    
+
+    // printf('min dist: %f\n', min_distance);
     //TO HERE
     timer_opt_CS = timer_end(stv);
+    // printf('min dist: %lf', (float)min_distance);
     printf("Calculation using optimized CS took: %10.6f \n", timer_opt_CS);
     *found = closest_point;
     return result;
@@ -268,14 +344,28 @@ int check_correctness(classifying_funct a, classifying_funct b, unsigned int loo
     unsigned int i, a_found, b_found;
     data_t *a_res = a(lookFor, &a_found);
     data_t *b_res = b(lookFor, &b_found);
-    
-    for(i=0;i<ROWS-1;i++){
-        if(a_res[i]!=b_res[i])
+
+    // changed for allowing for pertubations
+    data_t epsilon = 0.0001;
+
+    for(i = 0; i < ROWS - 1; i++){
+        printf("reference value = %f, optimized output = %f\n", a_res[i], b_res[i]);
+        if (fabs(a_res[i] - b_res[i]) > epsilon) {
+
+            printf("reference value = %f, optimized output = %f\n", a_res[i], b_res[i]);
+            // returning 0 means = wrong
             return 0;
+        }
     }
-    if (a_found != b_found) return 0;
-    else *found=a_found;
-    return 1; 
+
+    if (fabs(a_found - b_found) > epsilon) {
+        printf("Found result is wrong --> ref: %f, opt= %f\n", a_found, b_found);
+        return 0;
+    }
+
+    *found=a_found;
+
+    return 1;
 }
 
 int main(int argc, char **argv){
